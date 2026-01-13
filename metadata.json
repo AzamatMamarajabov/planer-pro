@@ -1,0 +1,7 @@
+{
+  "name": "PlanifyAI Pro",
+  "description": "Next-generation bilingual personal planner by Akramov Azamat.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

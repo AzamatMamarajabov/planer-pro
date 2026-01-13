@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#020617" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>PlanifyAI Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-primary: #020617;
+        --card-bg: rgba(15, 23, 42, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.05);
+      }
+
+      * {
+        -webkit-tap-highlight-color: transparent;
+        box-sizing: border-box;
+        outline: none !important;
+        touch-action: manipulation; 
+      }
+
+      html {
+        height: 100%;
+        width: 100%;
+        overflow: hidden; 
+        background-color: var(--bg-primary);
+        overscroll-behavior: none; /* Sahifani tortganda yangilanishni o'chirish */
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        position: fixed; 
+        overflow: hidden;
+        background-color: var(--bg-primary);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: #f8fafc;
+        -webkit-font-smoothing: antialiased;
+        overscroll-behavior-y: none;
+      }
+
+      #root {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Silliq scroll va scrollbarni yashirish */
+      .scroll-container {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
+        scrollbar-width: none; /* Firefox */
+      }
+
+      .scroll-container::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+      }
+      
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid var(--glass-border);
+      }
+
+      .neo-card {
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6));
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+      }
+
+      .ai-gradient-text {
+        background: linear-gradient(to right, #818cf8, #c084fc, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      @keyframes glow-pulse {
+        0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.1); }
+        50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+      }
+
+      .active-glow { animation: glow-pulse 3s infinite; }
+      
+      input, select, textarea {
+        font-size: 16px !important; /* iOS zoom fix */
+      }
+
+      /* iPhone X+ Safe Areas */
+      .pt-safe { padding-top: env(safe-area-inset-top); }
+      .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+      .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
+      
+      .h-dvh { height: 100dvh; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.0",
+    "recharts": "https://esm.sh/recharts@2.12.0?external=react,react-dom",
+    "framer-motion": "https://esm.sh/framer-motion@10.16.4?external=react,react-dom"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
