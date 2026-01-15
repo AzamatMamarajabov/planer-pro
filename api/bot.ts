@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-const APP_URL = "https://planifyai-three.vercel.app/";
+const APP_URL = "https://planer-prov1.vercel.app/";
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
 export default async function handler(req: any, res: any) {
