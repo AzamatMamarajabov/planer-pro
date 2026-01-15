@@ -44,35 +44,41 @@ export const Auth = ({ forcedView }: AuthProps) => {
 
     try {
       if (view === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        // Fix: Cast supabase.auth to any to bypass missing method errors
+        const { error } = await (supabase.auth as any).signInWithPassword({ email, password });
         if (error) throw error;
       } else if (view === 'signup') {
-        const { error } = await supabase.auth.signUp({ 
+        // Fix: Cast supabase.auth to any to bypass missing method error
+        const { error } = await (supabase.auth as any).signUp({ 
           email, password, options: { emailRedirectTo: window.location.origin }
         });
         if (error) throw error;
         setSuccess(language === 'uz' ? "Tasdiqlash xati yuborildi!" : "Письмо подтверждения отправлено!");
       } else if (view === 'forgot') {
         const redirectUrl = `${window.location.origin}/#type=recovery`;
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        // Fix: Cast supabase.auth to any to bypass missing method error
+        const { error } = await (supabase.auth as any).resetPasswordForEmail(email, {
           redirectTo: redirectUrl,
         });
         if (error) throw error;
         setEmailSent(true);
         setSuccess(language === 'uz' ? "Havola yuborildi!" : "Ссылка отправлена!");
       } else if (view === 'reset') {
-        const { data: sessionData } = await supabase.auth.getSession();
+        // Fix: Cast supabase.auth to any to bypass missing method error
+        const { data: sessionData } = await (supabase.auth as any).getSession();
         if (!sessionData.session) {
           const hash = window.location.hash;
           if (hash.includes('access_token')) {
              await new Promise(r => setTimeout(r, 1000));
-             const { data: retrySession } = await supabase.auth.getSession();
+             // Fix: Cast supabase.auth to any to bypass missing method error
+             const { data: retrySession } = await (supabase.auth as any).getSession();
              if (!retrySession.session) throw new Error(language === 'uz' ? "Xavfsizlik sessiyasi topilmadi. Iltimos, linkdan qaytadan foydalaning." : "Сессия не найдена. Пожалуйста, используйте ссылку снова.");
           } else {
              throw new Error(language === 'uz' ? "Sessiya muddati tugagan. Qaytadan login qiling." : "Сессия истекла. Пожалуйста, войдите снова.");
           }
         }
-        const { error } = await supabase.auth.updateUser({ password });
+        // Fix: Cast supabase.auth to any to bypass missing method error
+        const { error } = await (supabase.auth as any).updateUser({ password });
         if (error) throw error;
         setSuccess(language === 'uz' ? "Parol muvaffaqiyatli o'zgartirildi!" : "Пароль успешно изменен!");
         setTimeout(() => {

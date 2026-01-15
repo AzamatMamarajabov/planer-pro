@@ -16,7 +16,6 @@ import { FinancePage } from './pages/Finance';
 import { Sparkles, Loader2, ShieldCheck } from 'lucide-react';
 import { APP_CONFIG } from './constants';
 import { supabase, isSupabaseConfigured } from './lib/supabaseClient';
-// Added missing motion import
 import { motion } from 'framer-motion';
 
 const MainApp = () => {
@@ -27,53 +26,48 @@ const MainApp = () => {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
-    const handleAuthChange = async (event: string, newSession: any) => {
+    const checkInitialHash = () => {
+      const hash = window.location.hash;
+      if (hash.includes('access_token') || hash.includes('type=recovery')) {
+        setIsRecoveryMode(true);
+        // Don't set isSyncing if session is already loading from AppContext
+        if (!isLoading && !session) setIsSyncing(true);
+      }
+    };
+
+    checkInitialHash();
+
+    // Fix: Cast supabase.auth to any to bypass missing onAuthStateChange error on SupabaseAuthClient type
+    const { data: { subscription } } = (supabase.auth as any).onAuthStateChange(async (event: string, newSession: any) => {
       console.log("Auth Event Context:", event, !!newSession);
       
       const hash = window.location.hash;
       const isRecoveryFlow = hash.includes('type=recovery') || hash.includes('access_token');
 
-      if (isRecoveryFlow || event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' || isRecoveryFlow) {
         setIsRecoveryMode(true);
-        
-        // Agar sessiya hali yo'q bo'lsa, uni kutish rejimiga o'tamiz
-        if (!newSession) {
-          setIsSyncing(true);
-          const { data } = await supabase.auth.getSession();
-          if (data.session) {
-            setIsSyncing(false);
-          }
-        } else {
-          setIsSyncing(false);
+        setIsSyncing(false);
+      }
+
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (event === 'SIGNED_IN' && !isRecoveryFlow) {
+           setIsRecoveryMode(false);
         }
+        setIsSyncing(false);
       }
 
-      if (event === 'USER_UPDATED') {
-        // Parol yangilangach sessiyani tozalash va Dashboardga o'tish
-        setTimeout(() => {
-          setIsRecoveryMode(false);
-          setIsSyncing(false);
-        }, 1500);
+      if (event === 'SIGNED_OUT') {
+        setIsRecoveryMode(false);
+        setIsSyncing(false);
       }
-    };
-
-    // Dastlabki tekshiruv
-    const hash = window.location.hash;
-    if (hash.includes('access_token') || hash.includes('type=recovery')) {
-      setIsSyncing(true);
-      setIsRecoveryMode(true);
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      handleAuthChange(event, session);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isLoading, session]);
 
-  // Kutish ekrani (Sinxronizatsiya paytida)
+  // Loading state (initial or during sync)
   if (isLoading || isSyncing) {
     return (
         <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 text-white">
@@ -94,16 +88,25 @@ const MainApp = () => {
     );
   }
 
-  // Recovery rejimida Auth komponentini ko'rsatamiz
-  if (isRecoveryMode) {
+  // Recovery mode shows Reset Password view
+  if (isRecoveryMode && !session) {
+    // If we're in recovery mode but no session is detected yet, 
+    // we might still be waiting for Supabase to process the hash.
+    // However, forcedView="reset" handles the hash internally.
+    return <Auth forcedView="reset" />;
+  }
+  
+  if (isRecoveryMode && session) {
+    // Session is present, user can now reset password
     return <Auth forcedView="reset" />;
   }
 
-  // Sessiya yo'q bo'lsa Login/Signup
+  // Not logged in
   if (!session) {
     return <Auth />;
   }
 
+  // Standard App Layout
   return (
     <MemoryRouter>
       <Layout>

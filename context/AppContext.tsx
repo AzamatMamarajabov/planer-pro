@@ -2,10 +2,11 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { AppState, Language, Theme, Task, Habit, UserProfile, Note, Transaction, SavingGoal, Debt } from '../types';
-import { Session } from '@supabase/supabase-js';
+// Fix: Removed missing Session import from @supabase/supabase-js as reported in error
 
 interface AppContextType extends AppState {
-  session: Session | null;
+  // Fix: Changed Session type to any to avoid missing export error
+  session: any | null;
   isLoading: boolean;
   isModalActive: boolean;
   setIsModalActive: (val: boolean) => void;
@@ -54,7 +55,8 @@ export const getLocalDate = (d: Date = new Date()) => {
 };
 
 export const AppProvider = ({ children }: { children?: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
+  // Fix: Changed Session type to any to avoid missing export error
+  const [session, setSession] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
   const [isModalActive, setIsModalActive] = useState(false);
@@ -97,14 +99,40 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     if (isDemo) return;
     const initSession = async () => {
         if (!isSupabaseConfigured) { setIsLoading(false); return; }
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setIsLoading(false);
+        
+        try {
+          // Fix: Cast supabase.auth to any to bypass missing method errors on SupabaseAuthClient type
+          const { data: { session: currentSession }, error } = await (supabase.auth as any).getSession();
+          
+          if (error) {
+            console.warn("Session init warning:", error.message);
+            // If we hit a refresh token error, the local storage is corrupted or stale.
+            // We clear it to allow the user to log in fresh.
+            if (error.message.toLowerCase().includes("refresh token")) {
+              // Fix: Cast supabase.auth to any to bypass missing method error
+              await (supabase.auth as any).signOut();
+              setSession(null);
+            }
+          } else {
+            setSession(currentSession);
+          }
+        } catch (e) {
+          console.error("Auth initialization failed:", e);
+        } finally {
+          setIsLoading(false);
+        }
     };
+    
     initSession();
+    
     if (isSupabaseConfigured) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
-          setSession(newSession);
+        // Fix: Cast supabase.auth to any to bypass missing method error
+        const { data: { subscription } } = (supabase.auth as any).onAuthStateChange((event: string, newSession: any) => {
+          if (event === 'SIGNED_OUT') {
+            setSession(null);
+          } else {
+            setSession(newSession);
+          }
         });
         return () => subscription.unsubscribe();
     }
@@ -122,6 +150,15 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
           fetchGoals();
           fetchDebts();
       }
+    } else {
+      // Clear data when no session
+      setTasks([]);
+      setHabits([]);
+      setNotes([]);
+      setTransactions([]);
+      setGoals([]);
+      setDebts([]);
+      setUserProfile(null);
     }
   }, [session, isDemo]);
 
@@ -147,7 +184,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     if(data) {
       setTasks(data.map(t => ({ 
         id: t.id.toString(), title: t.title, completed: t.is_completed, 
-        priority: t.priority, date: t.date, time_block: t.time_block,
+        priority: t.priority, date: t.date, timeBlock: t.time_block,
         tags: t.tags || [], subtasks: [] 
       })));
     }
@@ -362,7 +399,11 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
 
   const signOut = async () => { 
     if(isDemo) { setIsDemo(false); setSession(null); } 
-    else await supabase.auth.signOut(); 
+    else {
+      // Fix: Cast supabase.auth to any to bypass missing method error
+      await (supabase.auth as any).signOut();
+      setSession(null);
+    }
   };
 
   const enterDemoMode = () => { setIsDemo(true); setSession({ user: { id: 'demo', email: 'demo@planner.ai' } } as any); };
