@@ -13,7 +13,6 @@ export default async function handler(req: any, res: any) {
 
   if (message && message.text === '/start') {
     try {
-      // Gemini AI yordamida foydalanuvchi uchun chiroyli salomlashuv yaratamiz
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -22,7 +21,6 @@ export default async function handler(req: any, res: any) {
 
       const welcomeText = response.text || "Xush kelibsiz! PlanifyAI bilan kuningizni samarali rejalashtiring. 🚀";
 
-      // Telegram API orqali javob yuborish
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
