@@ -4,14 +4,15 @@ import { useApp, getLocalDate } from '../context/AppContext';
 import { TRANSLATIONS } from '../constants';
 import { parseNaturalLanguageToTasks } from '../services/geminiService';
 import { 
-  Mic, Sparkles, Check, Loader2, ArrowRight, Image as ImageIcon, 
-  X, Zap, ListChecks, Calendar, Trash2, Eraser, Info, AlertCircle
+  Mic, Sparkles, Check, Loader2, Image as ImageIcon, 
+  X, ListChecks, Calendar, Trash2, AlertCircle,
+  StopCircle, Send, Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task } from '../types';
 
 export const AIPlannerPage = () => {
-  const { language, addTasksBulk } = useApp();
+  const { language, addTasksBulk, setIsModalActive } = useApp();
   const t = TRANSLATIONS[language];
   
   const [inputText, setInputText] = useState('');
@@ -24,105 +25,103 @@ export const AIPlannerPage = () => {
 
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Mikrofonni to'xtatish
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.error("Stop error:", e);
-      }
-    }
-    setIsListening(false);
-  };
+  useEffect(() => {
+    setIsModalActive(isSuccess || isListening);
+    return () => setIsModalActive(false);
+  }, [isSuccess, isListening, setIsModalActive]);
 
-  const handleMicClick = (e: React.MouseEvent) => {
+  const suggestions = language === 'uz' ? [
+    "Ertaga soat 9 da majlis bor",
+    "Kitob o'qish va yugurish kerak",
+    "Shanba kuni uyni tozalash"
+  ] : [
+    "Завтра в 9 совещание",
+    "Почитать книгу и побегать",
+    "Уборка дома в субботу"
+  ];
+
+  // Safari uchun ovozni ishga tushirish (Sinxron rejim)
+  const handleToggleMic = (e: React.MouseEvent) => {
     e.preventDefault();
     
     if (isListening) {
-      stopListening();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsListening(false);
       return;
     }
 
-    // 1. Browser API-ni tekshirish
     const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
     
     if (!SpeechRecognition) {
-      setErrorMsg(language === 'uz' ? "Sizning brauzeringiz ovozni qo'llab-quvvatlamaydi. Safari yoki Chrome ishlating." : "Ваш браузер не поддерживает голосовой ввод. Используйте Safari или Chrome.");
+      setErrorMsg(language === 'uz' ? "Brauzeringiz ovozli qidiruvni qo'llab-quvvatlamaydi." : "Ваш браузер не поддерживает голосовой ввод.");
       return;
     }
 
-    // 2. Darhol interfeysni "Eshitish" rejimiga o'tkazish
-    setIsListening(true);
-    setErrorMsg(null);
+    // 1. Audio kontekstni uyg'otish (Safari uchun)
+    const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+    if (AudioContextClass) {
+        const audioCtx = new AudioContextClass();
+        audioCtx.resume();
+    }
 
     try {
-      // 3. Instance yaratish
       const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
       
-      // iOS Safari sozlamalari
       recognition.continuous = false;
       recognition.interimResults = true;
-      recognition.lang = language === 'uz' ? 'uz-UZ' : 'ru-RU';
       
+      // iOS'da uz-UZ ba'zida muammo tug'diradi, shuning uchun fallback qo'shamiz
+      recognition.lang = language === 'uz' ? 'uz-UZ' : 'ru-RU';
+
       recognition.onstart = () => {
-        console.log("Recognition started");
-        if (navigator.vibrate) navigator.vibrate(50);
+        setIsListening(true);
+        setErrorMsg(null);
       };
 
       recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0].transcript)
-          .join('');
-        setInputText(transcript);
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            transcript += event.results[i][0].transcript;
+          }
+        }
+        if (transcript) {
+          setInputText(prev => (prev.trim() ? prev + ' ' + transcript : transcript));
+        }
       };
 
       recognition.onerror = (event: any) => {
-        console.error("Speech Recognition Error:", event.error);
+        console.error("Mic Error:", event.error);
         setIsListening(false);
-        
-        switch (event.error) {
-          case 'not-allowed':
-            setErrorMsg(language === 'uz' ? "Mikrofonga ruxsat berilmagan. Sozlamalardan Safari mikrofoni yoqing." : "Нет доступа к микрофону. Проверьте настройки Safari.");
-            break;
-          case 'no-speech':
-            setErrorMsg(language === 'uz' ? "Ovoz eshitilmadi. Qaytadan urinib ko'ring." : "Голос не распознан. Попробуйте еще раз.");
-            break;
-          case 'network':
-            setErrorMsg(language === 'uz' ? "Internet bilan muammo." : "Проблема с интернетом.");
-            break;
-          default:
-            setErrorMsg(language === 'uz' ? `Xatolik: ${event.error}` : `Ошибка: ${event.error}`);
+        if (event.error === 'not-allowed') {
+          setErrorMsg(language === 'uz' 
+            ? "Mikrofon taqiqlangan. Safari sozlamalarida ruxsat bering." 
+            : "Микрофон запрещен. Разрешите в настройках Safari.");
+        } else if (event.error === 'language-not-supported') {
+            // Til qo'llab quvvatlanmasa rus tiliga fallback
+            recognition.lang = 'ru-RU';
+            recognition.start();
+        } else {
+          setErrorMsg(language === 'uz' ? "Ovozli xizmatda xatolik." : "Ошибка голосовой службы.");
         }
       };
 
       recognition.onend = () => {
-        console.log("Recognition ended");
         setIsListening(false);
       };
 
-      recognitionRef.current = recognition;
-      
-      // 4. MUHIM: recognition.start() hech qanday delay-larsiz bo'lishi kerak
+      // Safari uchun eng muhim: start() hech qanday asinxron kutishlarsiz bo'lishi shart
       recognition.start();
+      setIsListening(true); // Animatsiyani darhol yoqamiz
 
     } catch (err) {
-      console.error("Recognition execution crash:", err);
+      console.error("Speech Recognition crash:", err);
       setIsListening(false);
-      setErrorMsg(language === 'uz' ? "Mikrofonni ishga tushirishda xatolik." : "Ошибка запуска микрофона.");
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (readerEvent) => {
-        const base64 = (readerEvent.target?.result as string).split(',')[1];
-        setAttachedImage({ data: base64, mimeType: file.type, name: file.name });
-      };
-      reader.readAsDataURL(file);
     }
   };
 
@@ -130,194 +129,160 @@ export const AIPlannerPage = () => {
     if (!inputText.trim() && !attachedImage) return;
     setIsProcessing(true);
     setErrorMsg(null);
-    
     try {
       const newTasks = await parseNaturalLanguageToTasks(inputText, getLocalDate(), language, attachedImage || undefined);
-      
-      if (newTasks && newTasks.length > 0) {
-        const tasksToAdd = newTasks.map(task => ({
-          title: String(task.title || "Vazifa"),
-          priority: task.priority || 'medium',
-          date: task.date || getLocalDate(),
-          timeBlock: task.timeBlock || null,
-          id: crypto.randomUUID()
-        }));
-        
-        setGeneratedTasks(prev => [...tasksToAdd, ...prev]);
+      if (newTasks?.length) {
+        setGeneratedTasks(newTasks.map(t => ({ ...t, id: crypto.randomUUID() })));
         setInputText(''); 
         setAttachedImage(null);
       } else {
-        setErrorMsg(language === 'uz' ? "AI tushunmadi, iltimos aniqroq ayting." : "ИИ не понял, пожалуйста, уточните запрос.");
+        setErrorMsg(language === 'uz' ? "AI kiritilgan ma'lumotni tushunmadi." : "ИИ не понял запрос.");
       }
     } catch (err) {
-      setErrorMsg(language === 'uz' ? "Ulanishda xatolik yuz berdi." : "Ошибка сети.");
-    } finally {
-      setIsProcessing(false);
+      setErrorMsg(language === 'uz' ? "AI bilan bog'lanishda xatolik yuz berdi." : "Ошибка связи с ИИ.");
+    } finally { 
+      setIsProcessing(false); 
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 pb-48 pt-6 select-none touch-none">
+    <div className="max-w-4xl mx-auto px-4 pb-48 pt-4 flex flex-col gap-6">
       
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-black uppercase tracking-widest mb-4">
-           <Zap size={12} fill="currentColor" /> AI Planner v5.5
-        </div>
-        <h1 className="text-5xl md:text-7xl font-black text-white mb-2 tracking-tighter">
-          Planify<span className="ai-gradient-text">AI</span>
-        </h1>
-        <p className="text-slate-500 text-[10px] md:text-xs font-bold uppercase tracking-[0.2em] max-w-xs mx-auto">
-          {t.aiPlannerSubtitle}
-        </p>
-      </motion.div>
+      <div className="flex justify-between items-end mb-2">
+          <div className="space-y-1">
+              <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter">Planify<span className="ai-gradient-text">AI</span></h1>
+              <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">{t.proAssistant}</p>
+          </div>
+          <div className={`px-4 py-2 rounded-2xl border transition-all duration-500 flex items-center gap-2 ${isListening ? 'bg-rose-500/10 border-rose-500 active-glow' : 'bg-slate-900 border-white/5'}`}>
+              <div className={`w-2 h-2 rounded-full ${isListening ? 'bg-rose-500 animate-ping' : 'bg-slate-700'}`} />
+              <span className={`text-[10px] font-black uppercase tracking-widest ${isListening ? 'text-rose-400' : 'text-slate-600'}`}>{isListening ? t.listening : t.readyStatus}</span>
+          </div>
+      </div>
 
-      <div className="neo-card rounded-[2.5rem] overflow-hidden border border-white/5 relative shadow-2xl bg-slate-900/40 backdrop-blur-3xl">
-        <div className="p-6 md:p-12 space-y-6">
-          <textarea
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            placeholder={isListening ? t.listening : t.voiceExample}
-            className={`w-full h-32 md:h-48 bg-transparent border-none outline-none text-lg md:text-2xl font-bold text-white placeholder:text-slate-800 resize-none leading-relaxed transition-opacity ${isListening ? 'opacity-50' : 'opacity-100'}`}
-          />
-          
+      <div className="flex flex-col gap-6">
+          <div className={`neo-card rounded-[3rem] border relative overflow-hidden transition-all duration-700 ${isListening ? 'border-rose-500/30 bg-slate-950/80 shadow-[0_0_100px_rgba(244,63,94,0.2)]' : 'border-white/5 bg-slate-900/40 shadow-2xl'}`}>
+              
+              <AnimatePresence>
+                  {isListening && (
+                      <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }} 
+                        className="absolute inset-0 z-[500] bg-slate-950/90 backdrop-blur-2xl flex flex-col items-center justify-center"
+                        onClick={handleToggleMic}
+                      >
+                          <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 2 }} className="w-24 h-24 bg-rose-500/20 rounded-full flex items-center justify-center border border-rose-500/30">
+                              <Mic size={40} className="text-rose-500" />
+                          </motion.div>
+                          <p className="mt-6 text-white font-black uppercase tracking-[0.4em] text-[10px] animate-pulse">{t.listening}</p>
+                          <button className="mt-10 px-6 py-3 bg-white/5 rounded-2xl text-[10px] text-slate-500 font-black uppercase tracking-widest border border-white/5">To'xtatish</button>
+                      </motion.div>
+                  )}
+              </AnimatePresence>
+
+              <div className="p-8 md:p-12 space-y-8">
+                  <textarea
+                    ref={textareaRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder={t.aiPlannerSubtitle}
+                    className="w-full h-40 bg-transparent border-none outline-none text-2xl md:text-3xl font-bold text-white placeholder:text-slate-800 resize-none leading-tight"
+                  />
+                  
+                  {!inputText && !attachedImage && (
+                      <div className="flex flex-wrap gap-2">
+                          {suggestions.map((s, i) => (
+                              <button key={i} onClick={() => setInputText(s)} className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] text-slate-500 font-black uppercase tracking-widest transition-all">{s}</button>
+                          ))}
+                      </div>
+                  )}
+              </div>
+
+              <div className="px-8 md:px-12 pb-12 flex items-center gap-4">
+                  <div className="flex items-center gap-3">
+                      <button onClick={handleToggleMic} className={`w-14 h-14 rounded-[1.5rem] transition-all active:scale-90 flex items-center justify-center border shadow-2xl ${isListening ? 'bg-rose-600 text-white' : 'bg-slate-950 text-indigo-400 border-white/5'}`}>
+                          {isListening ? <StopCircle size={24} /> : <Mic size={24} />}
+                      </button>
+                      <button onClick={() => fileInputRef.current?.click()} className="w-14 h-14 rounded-[1.5rem] bg-slate-950 text-slate-500 hover:text-white border border-white/5 flex items-center justify-center active:scale-90 transition-all">
+                        <ImageIcon size={24} />
+                      </button>
+                      <input type="file" ref={fileInputRef} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (re) => {
+                            const base64 = (re.target?.result as string).split(',')[1];
+                            setAttachedImage({ data: base64, mimeType: file.type, name: file.name });
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }} className="hidden" accept="image/*" />
+                  </div>
+
+                  <button 
+                    onClick={handleGenerate} 
+                    disabled={(!inputText.trim() && !attachedImage) || isProcessing}
+                    className="flex-1 h-14 group relative overflow-hidden bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 text-white font-black text-[11px] uppercase tracking-[0.3em] rounded-[1.5rem] transition-all hover:scale-[1.02] hover:shadow-[0_15px_30px_-5px_rgba(79,70,229,0.5)] active:scale-95 disabled:opacity-20 flex items-center justify-center gap-3 border-t border-white/20 shadow-2xl"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    {isProcessing ? <Loader2 size={22} className="animate-spin" /> : <><Sparkles size={18} /> {t.createPlan}</>}
+                  </button>
+              </div>
+          </div>
+
           <AnimatePresence>
-            {attachedImage && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                className="inline-flex items-center gap-3 bg-slate-900/80 p-2 pr-4 rounded-2xl border border-white/10"
-              >
-                <div className="w-10 h-10 rounded-xl overflow-hidden">
-                   <img src={`data:${attachedImage.mimeType};base64,${attachedImage.data}`} className="w-full h-full object-cover" alt="preview" />
-                </div>
-                <span className="text-[10px] text-white font-bold truncate max-w-[80px]">{attachedImage.name}</span>
-                <button onClick={() => setAttachedImage(null)} className="p-1 text-rose-500 hover:bg-rose-500/10 rounded-lg"><X size={14}/></button>
+            {errorMsg && (
+              <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="p-5 bg-rose-500/10 border border-rose-500/20 rounded-[2rem] text-rose-400 text-xs font-black flex items-start gap-4 shadow-xl">
+                 <AlertCircle size={20} className="shrink-0 mt-0.5" /> 
+                 <div className="space-y-1">
+                    <p className="font-black">Xatolik yuz berdi</p>
+                    <p className="opacity-80 font-bold">{errorMsg}</p>
+                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-6 border-t border-white/5">
-            <div className="grid grid-cols-2 gap-4 h-16 md:w-48">
-              <button 
-                onClick={() => fileInputRef.current?.click()} 
-                className="flex items-center justify-center bg-slate-950 text-slate-500 hover:text-indigo-400 rounded-2xl border border-white/5 transition-all active:scale-90"
-              >
-                <ImageIcon size={24} />
-              </button>
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-              
-              <button 
-                onClick={handleMicClick} 
-                className={`flex items-center justify-center rounded-2xl transition-all active:scale-95 border relative overflow-hidden ${isListening ? 'bg-rose-600 text-white border-transparent shadow-[0_0_30px_rgba(225,29,72,0.4)]' : 'bg-slate-950 text-indigo-500 border-white/5'}`}
-              >
-                <AnimatePresence>
-                  {isListening && (
-                    <motion.div 
-                      key="waves"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute inset-0 flex items-center justify-center"
-                    >
-                        <motion.div 
-                            animate={{ scale: [1, 2], opacity: [0.5, 0] }}
-                            transition={{ repeat: Infinity, duration: 1 }}
-                            className="absolute w-full h-full bg-white rounded-full"
-                        />
-                        <motion.div 
-                            animate={{ scale: [1, 1.5], opacity: [0.3, 0] }}
-                            transition={{ repeat: Infinity, duration: 1.2, delay: 0.2 }}
-                            className="absolute w-full h-full bg-white rounded-full"
-                        />
+          <AnimatePresence>
+            {generatedTasks.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                <div className="flex items-center justify-between px-4">
+                  <div className="flex items-center gap-4">
+                     <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 border border-emerald-500/20"><ListChecks size={24}/></div>
+                     <div><h3 className="text-2xl font-black text-white tracking-tighter">{t.generatedTasks}</h3></div>
+                  </div>
+                  <button onClick={() => setGeneratedTasks([])} className="p-3 text-slate-500 hover:text-rose-500 bg-white/5 rounded-2xl"><Trash2 size={20} /></button>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-4">
+                  {generatedTasks.map((task, idx) => (
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }} key={idx} className="bg-slate-900/60 border border-white/5 p-6 rounded-[2.5rem] flex items-center justify-between gap-5 group">
+                        <div className="flex items-center gap-4 flex-1">
+                            <div className={`w-3 h-3 rounded-full shrink-0 ${task.priority === 'high' ? 'bg-rose-500 active-glow' : task.priority === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                            <input type="text" value={task.title} onChange={(e) => { const n = [...generatedTasks]; n[idx].title = e.target.value; setGeneratedTasks(n); }} className="bg-transparent text-white font-black text-xl w-full outline-none" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                             <span className="text-[9px] font-black text-slate-500 uppercase bg-slate-950 px-3 py-1.5 rounded-xl border border-white/5">{task.date}</span>
+                             <button onClick={() => setGeneratedTasks(prev => prev.filter((_, i) => i !== idx))} className="p-2 text-slate-700 hover:text-rose-500 transition-colors"><X size={20} /></button>
+                        </div>
                     </motion.div>
-                  )}
-                </AnimatePresence>
-                <Mic size={24} className="relative z-10" />
-              </button>
-            </div>
+                  ))}
+                </div>
 
-            <button 
-              onClick={handleGenerate} 
-              disabled={(!inputText.trim() && !attachedImage) || isProcessing}
-              className="h-16 px-8 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-xl hover:bg-indigo-500 active:scale-[0.97] transition-all disabled:opacity-20 flex items-center justify-center gap-3 group"
-            >
-              {isProcessing ? <Loader2 size={20} className="animate-spin" /> : <><Sparkles size={18} /> {t.createPlan}</>}
-            </button>
-          </div>
-        </div>
+                <button onClick={async () => { setIsProcessing(true); await addTasksBulk(generatedTasks); setGeneratedTasks([]); setIsProcessing(false); setIsSuccess(true); setTimeout(() => setIsSuccess(false), 3000); }} className="w-full h-20 bg-emerald-600 text-white font-black text-sm uppercase tracking-[0.4em] rounded-[2.5rem] shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center gap-4">
+                    {t.addAllTasks} <Send size={24} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
       </div>
 
       <AnimatePresence>
-        {errorMsg && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="mt-4 p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-500 text-center text-xs font-black uppercase tracking-widest flex flex-col items-center justify-center gap-2"
-          >
-             <div className="flex items-center gap-2"><AlertCircle size={14} /> {errorMsg}</div>
-             <p className="text-[9px] text-slate-500 normal-case opacity-70">iPhone Sozlamalari - Safari - Mikrofon - Ruxsat berish (Allow)</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {generatedTasks.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="mt-12 space-y-6">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="text-xl font-black text-white tracking-tight flex items-center gap-3">
-                 <div className="p-2 bg-indigo-600/20 rounded-lg text-indigo-400"><ListChecks size={20}/></div>
-                 {t.generatedTasks}
-              </h3>
-              <button onClick={() => setGeneratedTasks([])} className="p-2 text-slate-600 hover:text-rose-500 transition-colors"><Eraser size={18}/></button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {generatedTasks.map((task, idx) => (
-                <motion.div 
-                    layout key={task.id || idx} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                    className="neo-card p-4 rounded-3xl flex items-center justify-between gap-4 border border-white/5"
-                >
-                    <div className="min-w-0">
-                      <p className="font-bold text-white truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-[8px] font-black uppercase tracking-widest ${task.priority === 'high' ? 'text-rose-400' : 'text-indigo-400'}`}>{task.priority}</span>
-                        <span className="text-slate-600 text-[8px] font-black">{task.date}</span>
-                      </div>
-                    </div>
-                    <button onClick={() => setGeneratedTasks(prev => prev.filter(t => t.id !== task.id))} className="p-2 text-slate-700 hover:text-rose-500 transition-colors"><Trash2 size={16}/></button>
-                </motion.div>
-              ))}
-            </div>
-
-            <button 
-                onClick={async () => {
-                   setIsProcessing(true);
-                   await addTasksBulk(generatedTasks);
-                   setGeneratedTasks([]);
-                   setIsProcessing(false);
-                   setIsSuccess(true);
-                   setTimeout(() => setIsSuccess(false), 3000);
-                }} 
-                className="w-full py-6 bg-indigo-600 text-white font-black text-sm uppercase tracking-widest rounded-3xl shadow-2xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-4 group active:scale-[0.98]"
-            >
-                {t.addAllTasks} <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
         {isSuccess && (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 flex justify-center items-center z-[999] p-6 bg-slate-950/90 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 1.1, opacity: 0 }}
-              className="bg-indigo-600 p-10 rounded-[3rem] shadow-[0_0_100px_rgba(79,70,229,0.5)] flex flex-col items-center gap-6 text-center"
-            >
-              <div className="w-20 h-20 bg-white text-indigo-600 rounded-full flex items-center justify-center shadow-2xl">
-                <Check strokeWidth={4} size={40} />
-              </div>
-              <h4 className="text-white font-black text-2xl tracking-tighter">{t.planCreated}</h4>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-slate-950/80 backdrop-blur-xl flex items-center justify-center p-6">
+            <motion.div initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 1.1, opacity: 0 }} className="bg-[#0F1115] border border-white/10 p-12 rounded-[4rem] shadow-2xl flex flex-col items-center gap-8 text-center max-w-sm">
+              <div className="w-24 h-24 bg-emerald-500 text-white rounded-[2rem] flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.5)]"><Check strokeWidth={4} size={48} /></div>
+              <div><h4 className="text-white font-black text-3xl tracking-tighter mb-2">{t.planCreated}</h4><p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">{t.allTasksAdded}</p></div>
+              <button onClick={() => setIsSuccess(false)} className="w-full py-5 bg-white text-black rounded-[2rem] font-black text-xs uppercase tracking-widest active:scale-95 transition-all">{language === 'uz' ? 'Yopish' : 'Закрыть'}</button>
             </motion.div>
           </motion.div>
         )}

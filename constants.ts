@@ -82,6 +82,16 @@ export const TRANSLATIONS = {
     successRate: "Muvaffaqiyat",
     totalCompletions: "Jami bajarilgan",
     bestStreak: "Eng yaxshi seriya",
+    // UI Headers
+    proAssistant: "PRO YORDAMCHI",
+    aiAssistant: "AI YORDAMCHI",
+    menuHeader: "MENYU",
+    accountHeader: "PROFIL",
+    levelLabel: "DARAJA",
+    xpLabel: "XP",
+    remaining: "vazifa qoldi",
+    allClear: "Barchasi tayyor",
+    readyStatus: "TAYYOR",
     // New Features
     pomodoro: "Pomodoro Taymer",
     focusSession: "Fokus Seansi",
@@ -105,6 +115,11 @@ export const TRANSLATIONS = {
     history: "Tarix",
     currentStreak: "Joriy seriya",
     startHabit: "Odatni boshlash",
+    monitoring: "MONITORING",
+    thisWeek: "Shu hafta",
+    lastWeek: "O'tgan hafta",
+    ago: "oldin",
+    later: "keyin",
     // Profile Specific
     accountSettings: "Hisob sozlamalari",
     personalInfo: "Shaxsiy ma'molumotlar",
@@ -117,12 +132,14 @@ export const TRANSLATIONS = {
     totalTasks: "Jami vazifalar",
     activeHabits: "Faol odatlar",
     currentLevel: "Joriy daraja",
+    unlimitedAccess: "Cheksiz ruxsat",
     // AI Planner
     aiPlannerTitle: "AI Planner",
     aiPlannerSubtitle: "Bugun nimalar qilmoqchisiz? Ayting yoki yozing...",
     listening: "Eshitilmoqda...",
     createPlan: "Reja tuzish",
     planCreated: "Reja muvaffaqiyatli tuzildi!",
+    allTasksAdded: "Barcha vazifalar qo'shildi",
     tryVoice: "Ovozli buyruqni sinab ko'ring",
     voiceExample: "Masalan: Ertaga soat 9 da majlis bor, keyin bozor qilishim kerak.",
     processing: "AI rejalashtirmoqda...",
@@ -141,7 +158,13 @@ export const TRANSLATIONS = {
     type: "Turi",
     aiFinanceAdvice: "Moliyaviy maslahat oling",
     recentTransactions: "Oxirgi o'tkazmalar",
-    noTransactions: "Hozircha o'tkazmalar yo'q"
+    noTransactions: "Hozircha o'tkazmalar yo'q",
+    spendingTrend: "Xarajatlar Trendi",
+    smartWallet: "Aqlli Hamyon Tizimi",
+    new: "Yangi",
+    saveTransaction: "O'tkazmani saqlash",
+    goals: "Maqsadlar",
+    debts: "Qarzlar"
   },
   ru: {
     dashboard: "Панель управления",
@@ -216,6 +239,16 @@ export const TRANSLATIONS = {
     successRate: "Успешность",
     totalCompletions: "Всего выполнено",
     bestStreak: "Лучшая серия",
+    // UI Headers
+    proAssistant: "PRO ПОМОЩНИК",
+    aiAssistant: "ИИ ПОМОЩНИК",
+    menuHeader: "МЕНЮ",
+    accountHeader: "ПРОФИЛЬ",
+    levelLabel: "УРОВЕНЬ",
+    xpLabel: "XP",
+    remaining: "задач осталось",
+    allClear: "Все готово",
+    readyStatus: "ГОТОВ",
     // New Features
     pomodoro: "Таймер Помидора",
     focusSession: "Сессия Фокуса",
@@ -239,6 +272,11 @@ export const TRANSLATIONS = {
     history: "История",
     currentStreak: "Текущая серия",
     startHabit: "Начать привычку",
+    monitoring: "МОНИТОРИНГ",
+    thisWeek: "Эта неделя",
+    lastWeek: "Прошлая неделя",
+    ago: "назад",
+    later: "спустя",
     // Profile Specific
     accountSettings: "Настройки аккаунта",
     personalInfo: "Личная информация",
@@ -251,12 +289,14 @@ export const TRANSLATIONS = {
     totalTasks: "Всего задач",
     activeHabits: "Активные привычки",
     currentLevel: "Текущий уровень",
+    unlimitedAccess: "Безлимитный доступ",
     // AI Planner
     aiPlannerTitle: "AI Планировщик",
     aiPlannerSubtitle: "Скажите, что вы планируете на сегодня...",
     listening: "Слушаю...",
     createPlan: "Создать план",
     planCreated: "План успешно создан!",
+    allTasksAdded: "Все задачи добавлены",
     tryVoice: "Попробуйте голосовой ввод",
     voiceExample: "Пример: Завтра в 9 утра совещание, потом нужно купить продукты.",
     processing: "ИИ планирует...",
@@ -275,7 +315,13 @@ export const TRANSLATIONS = {
     type: "Тип",
     aiFinanceAdvice: "Получить фин. совет",
     recentTransactions: "Недавние транзакции",
-    noTransactions: "Транзакций пока нет"
+    noTransactions: "Транзакций пока нет",
+    spendingTrend: "Тренд расходов",
+    smartWallet: "Умная Система Кошелька",
+    new: "Новый",
+    saveTransaction: "Сохранить перевод",
+    goals: "Цели",
+    debts: "Долги"
   }
 };
 

@@ -301,75 +301,83 @@ export const AdminPage = () => {
         </div>
       </div>
 
-      {/* Enhanced Edit User Modal */}
+      {/* Enhanced Edit User Modal - Keyboard Friendly */}
       <AnimatePresence>
         {editingUser && (
             <motion.div 
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-slate-950/95 backdrop-blur-2xl z-[100] flex items-end md:items-center justify-center p-0 md:p-6"
+                className="fixed inset-0 bg-slate-950/95 backdrop-blur-2xl z-[100] flex flex-col justify-end md:justify-center items-center p-0 md:p-6"
                 onClick={() => setEditingUser(null)}
             >
                 <motion.div 
-                    initial={{ y: "100%", scale: 0.95 }} animate={{ y: 0, scale: 1 }} exit={{ y: "100%", scale: 0.95 }}
+                    initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                     onClick={(e) => e.stopPropagation()}
-                    className="bg-slate-900 w-full max-w-xl rounded-t-[3.5rem] md:rounded-[3.5rem] p-8 md:p-10 border-t md:border border-white/10 shadow-2xl overflow-hidden relative"
+                    className="bg-slate-900 w-full max-w-xl rounded-t-[3.5rem] md:rounded-[3.5rem] border-t md:border border-white/10 shadow-2xl overflow-hidden relative flex flex-col max-h-[90dvh]"
                 >
-                    <div className="flex justify-between items-center mb-10">
-                        <div className="flex items-center gap-5">
-                            <div className="p-4 bg-indigo-600/10 rounded-2xl text-indigo-400 border border-indigo-500/10"><Edit size={24} /></div>
-                            <div>
-                                <h3 className="text-2xl font-black text-white tracking-tighter">Boshqaruv</h3>
-                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mt-0.5">{editingUser.email}</p>
-                            </div>
-                        </div>
-                        <button onClick={() => setEditingUser(null)} className="p-4 bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"><X size={24}/></button>
+                    {/* Handle bar for mobile */}
+                    <div className="shrink-0 w-full flex items-center justify-center pt-4 pb-2 md:hidden" onClick={() => setEditingUser(null)}>
+                        <div className="w-12 h-1.5 bg-white/10 rounded-full" />
                     </div>
 
-                    <form onSubmit={handleSaveEdit} className="space-y-8">
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Foydalanuvchi Roli</label>
-                                <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-white/5">
-                                    <button type="button" onClick={() => setEditingUser({...editingUser, role: 'user'})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.role === 'user' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white/5'}`}>User</button>
-                                    <button type="button" onClick={() => setEditingUser({...editingUser, role: 'admin'})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.role === 'admin' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white/5'}`}>Admin</button>
+                    {/* Sticky Header */}
+                    <div className="shrink-0 px-8 pb-4 pt-2 flex justify-between items-center border-b border-white/5">
+                         <div className="flex items-center gap-3">
+                                <div className="p-2 bg-indigo-600/10 rounded-xl text-indigo-400"><Edit size={20} /></div>
+                                <div>
+                                    <h3 className="text-xl font-black text-white tracking-tighter">Boshqaruv</h3>
+                                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">{editingUser.email.split('@')[0]}</p>
+                                </div>
+                         </div>
+                         <button onClick={() => setEditingUser(null)} className="p-2 bg-white/5 rounded-full text-slate-500 hover:text-white transition-all"><X size={20}/></button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-8 pt-4 pb-safe">
+                        <form onSubmit={handleSaveEdit} className="space-y-8">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Foydalanuvchi Roli</label>
+                                    <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-white/5">
+                                        <button type="button" onClick={() => setEditingUser({...editingUser, role: 'user'})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.role === 'user' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white/5'}`}>User</button>
+                                        <button type="button" onClick={() => setEditingUser({...editingUser, role: 'admin'})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.role === 'admin' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-white/5'}`}>Admin</button>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Kirish Holati</label>
+                                    <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-white/5">
+                                        <button type="button" onClick={() => setEditingUser({...editingUser, is_active: true})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.is_active ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-white/5'}`}>Active</button>
+                                        <button type="button" onClick={() => setEditingUser({...editingUser, is_active: false})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${!editingUser.is_active ? 'bg-rose-600 text-white' : 'text-slate-500 hover:bg-white/5'}`}>Locked</button>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Kirish Holati</label>
-                                <div className="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-white/5">
-                                    <button type="button" onClick={() => setEditingUser({...editingUser, is_active: true})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${editingUser.is_active ? 'bg-emerald-600 text-white' : 'text-slate-500 hover:bg-white/5'}`}>Active</button>
-                                    <button type="button" onClick={() => setEditingUser({...editingUser, is_active: false})} className={`py-3 rounded-xl font-black text-[10px] uppercase transition-all ${!editingUser.is_active ? 'bg-rose-600 text-white' : 'text-slate-500 hover:bg-white/5'}`}>Locked</button>
-                                </div>
+
+                            <div className="grid grid-cols-2 gap-6">
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Level</label>
+                                    <input type="number" inputMode="decimal" value={editingUser.level} onChange={(e) => setEditingUser({...editingUser, level: parseInt(e.target.value)})} className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-xl" />
+                                 </div>
+                                 <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">XP</label>
+                                    <input type="number" inputMode="decimal" value={editingUser.xp} onChange={(e) => setEditingUser({...editingUser, xp: parseInt(e.target.value)})} className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-xl" />
+                                 </div>
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-6">
-                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Level</label>
-                                <input type="number" value={editingUser.level} onChange={(e) => setEditingUser({...editingUser, level: parseInt(e.target.value)})} className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-xl" />
-                             </div>
-                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">XP</label>
-                                <input type="number" value={editingUser.xp} onChange={(e) => setEditingUser({...editingUser, xp: parseInt(e.target.value)})} className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-xl" />
-                             </div>
-                        </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2 flex items-center gap-2">
+                                    <CalendarRange size={12}/> Obuna Tugash Muddati
+                                </label>
+                                <input 
+                                    type="date" 
+                                    value={editingUser.subscription_expires_at ? new Date(editingUser.subscription_expires_at).toISOString().split('T')[0] : ''}
+                                    onChange={(e) => setEditingUser({...editingUser, subscription_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
+                                    className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-lg shadow-inner"
+                                />
+                            </div>
 
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2 flex items-center gap-2">
-                                <CalendarRange size={12}/> Obuna Tugash Muddati
-                            </label>
-                            <input 
-                                type="date" 
-                                value={editingUser.subscription_expires_at ? new Date(editingUser.subscription_expires_at).toISOString().split('T')[0] : ''}
-                                onChange={(e) => setEditingUser({...editingUser, subscription_expires_at: e.target.value ? new Date(e.target.value).toISOString() : null})}
-                                className="w-full p-5 bg-slate-950/50 text-white rounded-2xl border border-white/5 font-black outline-none focus:border-indigo-600 transition-all text-lg shadow-inner"
-                            />
-                        </div>
-
-                        <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-4 active:scale-[0.97] group">
-                            <Save size={20} /> O'zgarishlarni Saqlash
-                        </button>
-                    </form>
+                            <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-4 active:scale-[0.97] group">
+                                <Save size={20} /> O'zgarishlarni Saqlash
+                            </button>
+                        </form>
+                    </div>
                 </motion.div>
             </motion.div>
         )}

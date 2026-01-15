@@ -7,6 +7,8 @@ import { Session } from '@supabase/supabase-js';
 interface AppContextType extends AppState {
   session: Session | null;
   isLoading: boolean;
+  isModalActive: boolean;
+  setIsModalActive: (val: boolean) => void;
   setLanguage: (lang: Language) => void;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
@@ -55,6 +57,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDemo, setIsDemo] = useState(false);
+  const [isModalActive, setIsModalActive] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<Habit[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -144,7 +147,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     if(data) {
       setTasks(data.map(t => ({ 
         id: t.id.toString(), title: t.title, completed: t.is_completed, 
-        priority: t.priority, date: t.date, timeBlock: t.time_block,
+        priority: t.priority, date: t.date, time_block: t.time_block,
         tags: t.tags || [], subtasks: [] 
       })));
     }
@@ -164,7 +167,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
   const fetchNotes = async () => { 
     if(!session || isDemo) return; 
     const { data } = await supabase.from('notes').select('*').eq('user_id', session.user.id).order('created_at', { ascending: false }); 
-    if(data) setNotes(data); 
+    if(data) setNotes(data.map(n => ({...n, id: n.id.toString()}))); 
   };
 
   const fetchTransactions = async () => {
@@ -230,7 +233,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     if(!task) return; 
     const newStatus = !task.completed;
     setTasks(prev => prev.map(t => t.id === id ? { ...t, completed: newStatus } : t)); 
-    if(!isDemo) await supabase.from('todos').update({ is_completed: newStatus }).eq('id', parseInt(id)); 
+    if(!isDemo) await supabase.from('todos').update({ is_completed: newStatus }).eq('id', id); 
     if(newStatus) awardXP(10); 
   };
 
@@ -238,12 +241,11 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     setTasks(prev => prev.filter(t => t.id !== id)); 
     if(!isDemo) {
         try {
-            const numericId = parseInt(id);
-            const { error } = await supabase.from('todos').delete().eq('id', isNaN(numericId) ? id : numericId);
+            const { error } = await supabase.from('todos').delete().eq('id', id);
             if (error) throw error;
         } catch (err) {
             console.error("Task o'chirishda xatolik:", err);
-            fetchTasks(); // Xatolik bo'lsa holatni qayta yuklash
+            fetchTasks(); 
         }
     }
   };
@@ -255,7 +257,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
         if (dbFields.timeBlock) { dbFields.time_block = dbFields.timeBlock; delete dbFields.timeBlock; }
         if (dbFields.completed !== undefined) { dbFields.is_completed = dbFields.completed; delete dbFields.completed; }
         const { id, ...rest } = dbFields;
-        await supabase.from('todos').update(rest).eq('id', parseInt(id)); 
+        await supabase.from('todos').update(rest).eq('id', id); 
     }
   };
 
@@ -273,7 +275,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     const exists = h.completedDates.includes(date); 
     const newDates = exists ? h.completedDates.filter(d => d !== date) : [...h.completedDates, date]; 
     setHabits(prev => prev.map(x => x.id === id ? { ...x, completedDates: newDates } : x)); 
-    if(!isDemo) await supabase.from('habits').update({ completed_dates: newDates }).eq('id', parseInt(id));
+    if(!isDemo) await supabase.from('habits').update({ completed_dates: newDates }).eq('id', id);
     if(!exists) awardXP(5); 
   };
 
@@ -281,8 +283,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     setHabits(prev => prev.filter(h => h.id !== id)); 
     if(!isDemo) {
         try {
-            const numericId = parseInt(id);
-            const { error } = await supabase.from('habits').delete().eq('id', isNaN(numericId) ? id : numericId);
+            const { error } = await supabase.from('habits').delete().eq('id', id);
             if (error) throw error;
         } catch (err) {
             console.error("Odatni o'chirishda xatolik:", err);
@@ -299,7 +300,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
 
   const deleteTransaction = async (id: string) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
-    if (!isDemo) await supabase.from('transactions').delete().eq('id', parseInt(id));
+    if (!isDemo) await supabase.from('transactions').delete().eq('id', id);
   };
 
   const addGoal = async (goal: Omit<SavingGoal, 'id'>) => {
@@ -314,13 +315,13 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
         const up: any = {};
         if (goal.currentAmount !== undefined) up.current_amount = goal.currentAmount;
         if (goal.title) up.title = goal.title;
-        await supabase.from('goals').update(up).eq('id', parseInt(goal.id));
+        await supabase.from('goals').update(up).eq('id', goal.id);
     }
   };
 
   const deleteGoal = async (id: string) => {
     setGoals(prev => prev.filter(g => g.id !== id));
-    if (!isDemo) await supabase.from('goals').delete().eq('id', parseInt(id));
+    if (!isDemo) await supabase.from('goals').delete().eq('id', id);
   };
 
   const addDebt = async (debt: Omit<Debt, 'id'>) => {
@@ -334,24 +335,24 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
     if (!isDemo) {
         const up: any = {};
         if (debt.paidAmount !== undefined) up.paid_amount = debt.paidAmount;
-        await supabase.from('debts').update(up).eq('id', parseInt(debt.id));
+        await supabase.from('debts').update(up).eq('id', debt.id);
     }
   };
 
   const deleteDebt = async (id: string) => {
     setDebts(prev => prev.filter(d => d.id !== id));
-    if (!isDemo) await supabase.from('debts').delete().eq('id', parseInt(id));
+    if (!isDemo) await supabase.from('debts').delete().eq('id', id);
   };
 
   const addNote = async (content: string) => { 
     if(!session?.user) return;
     const { data } = await supabase.from('notes').insert([{ user_id: session.user.id, content }]).select(); 
-    if(data) setNotes(prev => [data[0], ...prev]); 
+    if(data) setNotes(prev => [{...data[0], id: data[0].id.toString()}, ...prev]); 
   };
 
   const deleteNote = async (id: string) => { 
     setNotes(prev => prev.filter(n => n.id !== id)); 
-    if(!isDemo) await supabase.from('notes').delete().eq('id', parseInt(id)); 
+    if(!isDemo) await supabase.from('notes').delete().eq('id', id); 
   };
 
   const convertNoteToTask = async (id: string, content: string) => { 
@@ -378,6 +379,7 @@ export const AppProvider = ({ children }: { children?: ReactNode }) => {
   return (
     <AppContext.Provider value={{
       language, theme, tasks, habits, notes, transactions, goals, debts, userName: session?.user?.email?.split('@')[0] || 'User', userProfile, session, isLoading,
+      isModalActive, setIsModalActive,
       setLanguage, setTheme, toggleTheme, addTask, addTasksBulk, toggleTask, deleteTask, updateTask,
       addHabit, toggleHabitForDate, deleteHabit, addNote, deleteNote, convertNoteToTask,
       addTransaction, deleteTransaction, addGoal, updateGoal, deleteGoal, addDebt, updateDebt, deleteDebt,

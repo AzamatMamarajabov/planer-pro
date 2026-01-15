@@ -3,7 +3,7 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     <meta name="theme-color" content="#020617" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -13,8 +13,9 @@
     <style>
       :root {
         --bg-primary: #020617;
-        --card-bg: rgba(15, 23, 42, 0.7);
-        --glass-border: rgba(255, 255, 255, 0.05);
+        --card-bg: rgba(15, 23, 42, 0.6);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --accent-glow: rgba(99, 102, 241, 0.15);
       }
 
       * {
@@ -22,28 +23,58 @@
         box-sizing: border-box;
         outline: none !important;
         touch-action: manipulation; 
+        selection-bg: rgba(99, 102, 241, 0.3);
       }
 
       html {
-        height: 100%;
+        height: 100dvh;
         width: 100%;
         overflow: hidden; 
         background-color: var(--bg-primary);
-        overscroll-behavior: none; /* Sahifani tortganda yangilanishni o'chirish */
+        overscroll-behavior: none;
       }
 
       body {
         margin: 0;
         padding: 0;
         width: 100%;
-        height: 100%;
+        height: 100dvh;
         position: fixed; 
         overflow: hidden;
         background-color: var(--bg-primary);
+        /* Grid Texture Background */
+        background-image: 
+          linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 40px 40px;
         font-family: 'Plus Jakarta Sans', sans-serif;
         color: #f8fafc;
         -webkit-font-smoothing: antialiased;
-        overscroll-behavior-y: none;
+      }
+      
+      /* Ambient Light Blobs */
+      body::before {
+        content: '';
+        position: absolute;
+        top: -10%;
+        left: -10%;
+        width: 50%;
+        height: 50%;
+        background: radial-gradient(circle, var(--accent-glow), transparent 70%);
+        pointer-events: none;
+        z-index: -1;
+      }
+      
+      body::after {
+        content: '';
+        position: absolute;
+        bottom: -10%;
+        right: -10%;
+        width: 50%;
+        height: 50%;
+        background: radial-gradient(circle, rgba(244, 63, 94, 0.1), transparent 70%);
+        pointer-events: none;
+        z-index: -1;
       }
 
       #root {
@@ -53,62 +84,61 @@
         flex-direction: column;
       }
 
-      /* Silliq scroll va scrollbarni yashirish */
       .scroll-container {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         overscroll-behavior-y: contain;
-        scrollbar-width: none; /* Firefox */
+        scrollbar-width: none; 
       }
-
-      .scroll-container::-webkit-scrollbar {
-        display: none; /* Chrome, Safari */
-      }
+      .scroll-container::-webkit-scrollbar { display: none; }
       
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
       .glass-card {
         background: var(--card-bg);
-        backdrop-filter: blur(24px);
-        -webkit-backdrop-filter: blur(24px);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
         border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
       }
 
       .neo-card {
-        background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.6));
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.8));
         border: 1px solid var(--glass-border);
-        box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 20px -5px rgba(0,0,0,0.4);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      }
+      
+      .neo-card:active {
+        transform: scale(0.98);
       }
 
       .ai-gradient-text {
-        background: linear-gradient(to right, #818cf8, #c084fc, #f472b6);
+        background: linear-gradient(135deg, #818cf8 0%, #c084fc 50%, #f472b6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+      }
+
+      .mask-linear {
+        mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
       }
 
       @keyframes glow-pulse {
-        0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.1); }
-        50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+        0%, 100% { box-shadow: 0 0 10px rgba(99, 102, 241, 0.1); }
+        50% { box-shadow: 0 0 25px rgba(99, 102, 241, 0.4); }
       }
 
       .active-glow { animation: glow-pulse 3s infinite; }
       
-      input, select, textarea {
-        font-size: 16px !important; /* iOS zoom fix */
-      }
-
-      /* iPhone X+ Safe Areas */
+      input, select, textarea { font-size: 16px !important; }
       .pt-safe { padding-top: env(safe-area-inset-top); }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
-      .mb-safe { margin-bottom: env(safe-area-inset-bottom); }
-      
       .h-dvh { height: 100dvh; }
+      .h-safe-bottom { height: env(safe-area-inset-bottom); }
     </style>
   <script type="importmap">
 {
@@ -126,10 +156,8 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
-</body>
+  </body>
 </html>

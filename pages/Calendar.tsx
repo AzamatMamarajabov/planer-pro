@@ -4,13 +4,13 @@ import { useApp, getLocalDate } from '../context/AppContext';
 import { TRANSLATIONS, TIME_SLOTS } from '../constants';
 import { 
   ChevronLeft, ChevronRight, Plus, X, Calendar as CalendarIcon, 
-  Clock, Trash2, CheckCircle2, CalendarCheck
+  Clock, Trash2, CheckCircle2, CalendarCheck, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Task, Priority } from '../types';
 
 export const CalendarPage = () => {
-  const { language, tasks, addTask, updateTask, deleteTask, toggleTask } = useApp();
+  const { language, tasks, addTask, updateTask, deleteTask, toggleTask, setIsModalActive } = useApp();
   const t = TRANSLATIONS[language];
   
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,6 +29,11 @@ export const CalendarPage = () => {
 
   const formattedDate = getLocalDate(selectedDate);
   const isToday = formattedDate === getLocalDate();
+
+  useEffect(() => {
+    setIsModalActive(isModalOpen);
+    return () => setIsModalActive(false);
+  }, [isModalOpen, setIsModalActive]);
 
   const weekDays = useMemo(() => {
     const days = [];
@@ -61,7 +66,7 @@ export const CalendarPage = () => {
         scrollRef.current.scrollTop = currentTimeOffset - 100;
     }
     return () => clearInterval(interval);
-  }, []);
+  }, [currentTimeOffset]);
 
   const handleOpenAdd = (slot: string) => {
     setEditingTask(null);
@@ -130,50 +135,50 @@ export const CalendarPage = () => {
     <div className="flex flex-col h-full gap-4 max-w-6xl mx-auto">
       
       {/* Header Panel */}
-      <div className="glass-panel p-4 rounded-[1.5rem] md:rounded-[2.5rem] border border-white/5 space-y-4 shrink-0">
-        <div className="flex items-center justify-between gap-2">
+      <div className="glass-panel p-4 rounded-[2rem] border border-white/5 space-y-4 shrink-0">
+        <div className="flex items-center justify-between gap-2 px-2">
             <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                    <CalendarIcon size={20} />
+                <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-600/20">
+                    <CalendarIcon size={24} />
                 </div>
                 <div>
-                    <h2 className="text-lg font-black text-white capitalize tracking-tight leading-none">
+                    <h2 className="text-xl font-black text-white capitalize tracking-tighter leading-none">
                         {selectedDate.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', { month: 'long', year: 'numeric' })}
                     </h2>
-                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-0.5">{formattedDate}</p>
+                    <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mt-1">{formattedDate}</p>
                 </div>
             </div>
             
-            <div className="flex items-center gap-1 bg-slate-800/40 p-1.5 rounded-xl border border-white/5">
-                <button onClick={() => changeDay(-1)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 active:scale-90 transition-transform"><ChevronLeft size={20}/></button>
+            <div className="flex items-center gap-1 bg-slate-900 p-1.5 rounded-2xl border border-white/5">
+                <button onClick={() => changeDay(-1)} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-500 active:scale-90 transition-all"><ChevronLeft size={20}/></button>
                 <button 
                   onClick={() => setSelectedDate(new Date())} 
-                  className="px-4 py-2 bg-indigo-600 text-white text-[10px] font-black rounded-lg uppercase tracking-wider active:scale-95 transition-transform"
+                  className="px-5 py-2.5 bg-indigo-600 text-white text-[10px] font-black rounded-xl uppercase tracking-widest active:scale-95 transition-all shadow-lg"
                 >
                   Bugun
                 </button>
-                <button onClick={() => changeDay(1)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 active:scale-90 transition-transform"><ChevronRight size={20}/></button>
+                <button onClick={() => changeDay(1)} className="p-2.5 hover:bg-white/5 rounded-xl text-slate-500 active:scale-90 transition-all"><ChevronRight size={20}/></button>
             </div>
         </div>
 
         {/* Compact Week Strip */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-2 px-1">
             {weekDays.map((date, idx) => {
                 const dateStr = getLocalDate(date);
                 const isActive = dateStr === formattedDate;
                 const isRealToday = dateStr === getLocalDate();
-                const dayName = date.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', { weekday: 'short' }).slice(0, 2);
+                const dayName = date.toLocaleDateString(language === 'uz' ? 'uz-UZ' : 'ru-RU', { weekday: 'short' }).slice(0, 3);
                 
                 return (
                     <button 
                         key={idx}
                         onClick={() => setSelectedDate(date)}
-                        className={`py-3 rounded-xl flex flex-col items-center gap-1 transition-all active:scale-95 ${isActive ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-800/30 text-slate-500 border border-white/5'}`}
+                        className={`py-4 rounded-2xl flex flex-col items-center gap-2 transition-all active:scale-95 ${isActive ? 'bg-indigo-600 text-white shadow-xl' : 'bg-slate-900/50 text-slate-500 border border-white/5'}`}
                     >
-                        <span className={`text-[9px] font-black uppercase ${isActive ? 'text-indigo-100' : isRealToday ? 'text-indigo-400' : 'text-slate-600'}`}>{dayName}</span>
-                        <span className="text-base font-black">{date.getDate()}</span>
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${isActive ? 'text-indigo-100' : isRealToday ? 'text-indigo-400' : 'text-slate-700'}`}>{dayName}</span>
+                        <span className="text-lg font-black leading-none">{date.getDate()}</span>
                         {tasks.some(t => t.date === dateStr && !t.completed) && (
-                           <div className={`w-1 h-1 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-500'}`} />
+                           <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_10px_white]' : 'bg-indigo-500'}`} />
                         )}
                     </button>
                 );
@@ -181,20 +186,19 @@ export const CalendarPage = () => {
         </div>
       </div>
 
-      {/* Time Grid - Independent Scroll */}
-      <div className="flex-1 glass-panel rounded-[1.5rem] md:rounded-[3rem] overflow-hidden flex flex-col border border-white/5 relative min-h-0">
-        <div className="flex-1 overflow-y-auto scroll-container relative" ref={scrollRef}>
+      {/* Time Grid */}
+      <div className="flex-1 glass-panel rounded-[2.5rem] overflow-hidden flex flex-col border border-white/5 relative min-h-0 bg-slate-950/20">
+        <div className="flex-1 overflow-y-auto scroll-container relative no-scrollbar" ref={scrollRef}>
             <div className="relative min-h-full pb-32">
-                {/* Current Time Line */}
                 {isToday && currentTimeOffset >= 0 && (
                     <div className="absolute left-0 right-0 z-30 pointer-events-none flex items-center" style={{ top: `${currentTimeOffset}px` }}>
-                        <div className="w-14 pr-2 text-right">
-                            <span className="text-[9px] font-black bg-rose-500 text-white px-1.5 py-0.5 rounded-full shadow-lg">
+                        <div className="w-16 pr-3 text-right">
+                            <span className="text-[9px] font-black bg-rose-500 text-white px-2 py-1 rounded-full shadow-lg border border-white/10">
                                 {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                             </span>
                         </div>
-                        <div className="flex-1 border-t border-rose-500/50 relative">
-                            <div className="absolute -left-1 -top-1 w-2 h-2 bg-rose-500 rounded-full"></div>
+                        <div className="flex-1 border-t-2 border-rose-500/50 relative">
+                            <div className="absolute -left-1 -top-1 w-2.5 h-2.5 bg-rose-500 rounded-full shadow-[0_0_15px_rgba(244,63,94,0.8)] border-2 border-white"></div>
                         </div>
                     </div>
                 )}
@@ -202,32 +206,33 @@ export const CalendarPage = () => {
                 <div className="space-y-0"> 
                     {TIME_SLOTS.map((time) => (
                     <div key={time} className="flex relative" style={{ height: `${SLOT_HEIGHT}px` }}>
-                        <div className="w-14 pr-3 text-right text-[10px] font-black text-slate-600 border-r border-white/5 pt-3 sticky left-0 bg-slate-950/95 backdrop-blur-sm z-10">
+                        <div className="w-16 pr-4 text-right text-[10px] font-black text-slate-700 border-r border-white/5 pt-4 sticky left-0 bg-slate-950/80 backdrop-blur-md z-10 uppercase tracking-widest">
                              {time}
                         </div>
                         
                         <div 
-                            className="flex-1 border-b border-white/5 relative pl-2 py-1 active:bg-white/[0.03] transition-colors"
+                            className="flex-1 border-b border-white/5 relative pl-3 py-2 active:bg-white/[0.02] transition-colors"
                             onClick={(e) => { if (e.target === e.currentTarget) handleOpenAdd(time); }}
                         >
-                            <div className="flex flex-col gap-1 pr-2 pt-1 h-full pointer-events-none">
+                            <div className="flex flex-col gap-2 pr-3 pt-1 h-full pointer-events-none">
                                 {tasksByTime[time]?.map(task => (
                                     <div 
                                         key={task.id} 
                                         onClick={(e) => { e.stopPropagation(); handleOpenEdit(task); }}
-                                        className={`pointer-events-auto px-3 py-2 rounded-xl border-l-4 text-[11px] font-bold shadow-lg flex items-center justify-between active:scale-[0.98] transition-transform
-                                            ${task.completed ? 'bg-slate-800/50 border-slate-600 text-slate-500 opacity-60' : 
+                                        className={`pointer-events-auto px-4 py-3 rounded-2xl border-l-4 text-[11px] font-black shadow-2xl flex items-center justify-between active:scale-[0.98] transition-all group
+                                            ${task.completed ? 'bg-slate-900/50 border-slate-700 text-slate-600 opacity-60' : 
                                             task.priority === 'high' ? 'bg-rose-500/10 border-rose-500 text-rose-200' :
                                             task.priority === 'medium' ? 'bg-amber-500/10 border-amber-500 text-amber-200' :
                                             'bg-indigo-500/10 border-indigo-500 text-indigo-200'}
                                         `}
                                     >
-                                        <div className="flex items-center gap-2 truncate w-full">
+                                        <div className="flex items-center gap-3 truncate w-full">
                                            <div onClick={(e) => { e.stopPropagation(); toggleTask(task.id); }} className="shrink-0">
-                                              {task.completed ? <CheckCircle2 size={16} className="text-emerald-500" /> : <div className="w-4 h-4 rounded-full border border-current opacity-40" />}
+                                              {task.completed ? <CheckCircle2 size={18} className="text-emerald-500" /> : <div className="w-4 h-4 rounded-full border-2 border-current opacity-30" />}
                                            </div>
-                                           <span className="truncate">{task.title}</span>
+                                           <span className="truncate tracking-tight">{task.title}</span>
                                         </div>
+                                        <Zap size={12} className={`shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${task.priority === 'high' ? 'text-rose-500' : 'text-indigo-500'}`} />
                                     </div>
                                 ))}
                             </div>
@@ -239,67 +244,69 @@ export const CalendarPage = () => {
         </div>
       </div>
 
-      {/* Mobile FAB */}
-      <div className="fixed bottom-24 right-4 md:hidden z-40">
-          <button 
-             onClick={() => handleOpenAdd(TIME_SLOTS[0])}
-             className="w-14 h-14 bg-indigo-600 text-white rounded-full shadow-[0_10px_30px_rgba(79,70,229,0.5)] flex items-center justify-center active:scale-90 transition-transform active-glow border-4 border-slate-900"
-          >
-              <Plus size={28} />
-          </button>
-      </div>
-
-      {/* Task Modal (Mobile Optimized) */}
+      {/* 🚀 KEYBOARD SAFE MODAL */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-md flex items-end justify-center sm:items-center sm:p-4"
+            className="fixed inset-0 z-[300] bg-slate-950/90 backdrop-blur-2xl flex flex-col justify-end md:justify-center items-center sm:p-4"
             onClick={() => setIsModalOpen(false)}
           >
             <motion.div 
                initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
                onClick={(e) => e.stopPropagation()}
-               className="w-full max-w-md bg-slate-900 border-t border-white/10 rounded-t-[2.5rem] md:rounded-[2.5rem] p-6 pb-12 md:pb-6 relative shadow-2xl max-h-[90vh] overflow-y-auto"
+               className="w-full max-w-lg bg-[#0F1115] border-t md:border border-white/10 rounded-t-[3rem] md:rounded-[3rem] relative shadow-2xl flex flex-col max-h-[95dvh]"
             >
-              <div className="w-12 h-1.5 bg-slate-700 rounded-full mx-auto mb-6 md:hidden opacity-50" />
-              
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-black text-white">{editingTask ? 'Tahrirlash' : 'Yangi vazifa'}</h3>
-                <button onClick={() => setIsModalOpen(false)} className="text-slate-500 p-2 bg-white/5 rounded-full"><X size={20}/></button>
+              <div className="shrink-0 w-full flex items-center justify-center pt-4 pb-2 md:hidden" onClick={() => setIsModalOpen(false)}>
+                    <div className="w-12 h-1.5 bg-white/10 rounded-full" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                 <input 
-                    autoFocus type="text" value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder={t.titlePlaceholder}
-                    className="w-full p-4 bg-slate-950 border border-white/10 rounded-2xl outline-none text-white text-lg font-bold"
-                 />
+              <div className="shrink-0 px-10 pb-4 pt-4 flex justify-between items-center">
+                <div>
+                    <h3 className="text-2xl font-black text-white tracking-tighter">{editingTask ? 'Vazifani tahrirlash' : 'Yangi reja'}</h3>
+                    <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-1">Reja tafsilotlari</p>
+                </div>
+                <button onClick={() => setIsModalOpen(false)} className="p-3 text-slate-500 hover:text-white bg-white/5 rounded-full"><X size={24}/></button>
+              </div>
 
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-500 uppercase">Vaqt</label>
-                         <select value={activeTimeSlot || ''} onChange={(e) => setActiveTimeSlot(e.target.value)} className="w-full p-4 bg-slate-950 text-white rounded-2xl border border-white/10 font-bold appearance-none">
-                            {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                         </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase">Muhimlik</label>
-                        <div className="flex gap-1 h-full">
-                            {(['low', 'medium', 'high'] as Priority[]).map(p => (
-                                <button key={p} type="button" onClick={() => setTaskPriority(p)} className={`flex-1 rounded-xl font-black text-[9px] uppercase border transition-all ${taskPriority === p ? 'bg-indigo-600 text-white border-transparent' : 'bg-slate-950 border-white/10 text-slate-500'}`}>{t[p].slice(0, 3)}</button>
-                            ))}
+              <div className="flex-1 overflow-y-auto p-10 pt-4 pb-safe no-scrollbar">
+                  <form onSubmit={handleSubmit} className="space-y-8 pb-20">
+                     <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Vazifa nomi</label>
+                        <textarea 
+                            autoFocus value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)}
+                            placeholder={t.titlePlaceholder}
+                            className="w-full p-6 bg-slate-950 border border-white/5 rounded-[1.5rem] outline-none text-white text-lg font-black focus:border-indigo-500/50 transition-all resize-none h-32"
+                        />
+                     </div>
+
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                             <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Vaqt bloki</label>
+                             <select value={activeTimeSlot || ''} onChange={(e) => setActiveTimeSlot(e.target.value)} className="w-full p-5 bg-slate-950 text-white rounded-[1.5rem] border border-white/5 font-black appearance-none focus:border-indigo-500/50">
+                                {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
+                             </select>
                         </div>
-                    </div>
-                 </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-600 uppercase tracking-widest ml-2">Muhimlik</label>
+                            <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-950 rounded-[1.5rem] border border-white/5">
+                                {(['low', 'medium', 'high'] as Priority[]).map(p => (
+                                    <button key={p} type="button" onClick={() => setTaskPriority(p)} className={`py-3.5 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all ${taskPriority === p ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-600'}`}>{t[p].slice(0, 3)}</button>
+                                ))}
+                            </div>
+                        </div>
+                     </div>
 
-                 <div className="flex gap-3 pt-2">
-                    {editingTask && (
-                        <button type="button" onClick={() => handleDelete(editingTask.id)} className="p-4 bg-rose-500/10 text-rose-500 rounded-2xl"><Trash2 size={24} /></button>
-                    )}
-                    <button type="submit" disabled={!taskTitle.trim()} className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl">{t.save}</button>
-                 </div>
-              </form>
+                     <div className="flex gap-3 pt-2">
+                        {editingTask && (
+                            <button type="button" onClick={() => handleDelete(editingTask.id)} className="p-6 bg-rose-500/10 text-rose-500 rounded-[1.5rem] hover:bg-rose-500 hover:text-white transition-all"><Trash2 size={24} /></button>
+                        )}
+                        <button type="submit" disabled={!taskTitle.trim()} className="flex-1 py-6 bg-white text-black rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-2xl active:scale-95 transition-all">
+                            {t.save}
+                        </button>
+                     </div>
+                  </form>
+              </div>
             </motion.div>
           </motion.div>
         )}
